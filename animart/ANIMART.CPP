@@ -1,0 +1,2266 @@
+#include <fstream.h>
+#include <ctype.h>
+#include <bios.h>
+#include <dos.h>
+#include <process.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <conio.h>
+#include <iomanip.h>
+#include <string.h>
+int k=0, cursor = 10;
+ifstream fin;
+ofstream fo;
+class Budge
+{
+	public:
+	long double budget;
+}B;
+void load()
+{
+	gotoxy(33, 12);
+	cout<<"P"; delay(100); cout<<"l"; delay(100); cout<<"e"; delay(100); cout<<"a";	delay(100); cout<<"s"; delay(100);
+	cout<<"e"; delay(100); cout<<" "; delay(100); cout<<"W"; delay(100); cout<<"a"; delay(100); cout<<"i"; delay(100);
+	cout<<"t";delay(100);
+	for(int i=0; i<3; i++)
+	{
+		cout<<".";
+		delay(100);
+	}
+}
+void stringinit(char *buff, int size)
+{
+	for(int i = 0; i < size; i++)
+	{
+		buff[i] = NULL;
+	}
+}
+int fieldEntry(char *a, int x, int y, int &no, char type, int size)
+{
+	int keyBACKSPACE = 8,keyESCAPE = 27,keyENTER = 7181, point;
+	_setcursortype(_NORMALCURSOR);
+	gotoxy(x, y);
+	char input;
+	int n = no;
+	while(1)
+	{
+		input = bioskey(0);
+		if(((isalnum(input))|| input == '@' || input=='_' || input == ' ' ||
+			input == '/' || input == '.')  && no<size)
+		{
+			if(type == 'u')      //For normal input
+			{
+				a[no] = input;
+				no++;
+				cout<<input;
+
+			}
+			if(type == 'p')    //For 'asterisk' input
+			{
+				a[no] = input;
+				no++;
+				cout<<"*";
+			}
+		}
+		else  if(input == keyBACKSPACE && no!=0)
+		{
+			gotoxy(x+no-1, y);
+			cout<<" ";
+			gotoxy(x+no-1,y);
+			no--;
+			a[no] = NULL;
+		}
+
+		else if(input == char(keyENTER))
+		{
+			point = 1;
+			break;
+		}
+		else if(input == char(keyESCAPE))
+		{
+			point = 0;
+			break;
+		}
+	}
+	no = n;
+	return point;
+}
+class User
+{
+	char usernm[20], pass[30], verpass[30];
+	public:
+	long double balance;
+	int read();
+	int ch_nm(char nm[]);
+	int ch_val(char unm[], char ps[]);
+	char* nm();
+	void nullify();
+	void disp();
+	void asadm(Budge &);
+}u, us[50], usr, u1;
+class Admin
+{
+	char usernm[20], pass[30], verpass[30];
+	public:
+	int read();
+	int ch_nm(char []);
+}A;
+int Admin :: ch_nm(char a[])
+{
+	if(strcmpi(usernm, a)==0)
+		return 1;
+	return 0;
+}
+void User :: nullify()
+{
+	strcpy(usernm, ""); strcpy(pass, ""); strcpy(verpass, ""); balance = 0;
+}
+void User :: asadm(Budge &B)
+{
+	strcpy(usernm, "admin");
+	strcpy(pass, "admin");
+	strcpy(verpass, "admin");
+	balance = B.budget;
+}
+void header(char [], char [], User, int, char);
+void animate();
+void redirect(int);
+int list(char [], char[], User &, Budge &, char);
+int use();
+int stock(User &, Budge &, char);
+int members=0, ind=0, passn=0, choice2, choice3;
+int del(int &, User &);
+char choice, fit[3][5], usrnm[30] = {""}, pss[50] = {""};;
+long double p=0;
+void Anima(Budge &, User &, char);
+void look();
+int User :: ch_val(char unm[], char ps[])
+{
+	if(strcmp(pass, ps))
+		return -1;
+	else if((strcmp(unm, usernm)==0) && (strcmp(pass, ps)==0))
+		return 1;
+	return 0;
+}
+int User :: ch_nm(char nam[])
+{
+	if(strcmp(usernm, nam) == 0)
+		return 1;
+	else
+		return 0;
+}
+char* User :: nm()
+{
+	return usernm;
+}
+void User :: disp()
+{
+	cout<<"Username: "<<usernm<<"\nPassword: "<<pass<<"\nBalance: "<<balance<<endl;
+}
+int User :: read()
+{
+	int flag = 0, t = 0;
+	s1:
+	animate();
+	cout<<setw(48)<<"Sign up for Animart"<<endl;
+	cout<<setw(48)<<"-------------------"<<endl<<endl;
+	flag = 0;
+	gotoxy(1,11);
+	cout<<"To Cancel : Press \'esc\' while entering password or while re-entering password...";
+	cout<<endl<<"BE AVISED: You'll not be able to cancel once you re-enter the password...\n";
+	cout<<"\nOnce you have successfully verified the password\nAnd if your Username doesn't match any of our existing Usernames\nYou agree to our policies\nAnd your Balance will not be refunded when you delete your account...";
+	gotoxy(1,6);
+	cout<<"Username: ";
+	gets(usernm);
+	if(members!=0)
+	{
+		fin.open("c:\\animart\\users.dat");
+		while(fin.read((char *)&usr, sizeof(usr)))
+		{
+			if(usr.ch_nm(usernm)==1)
+			{
+				flag = 1;
+				t++;
+				break;
+			}
+		}
+		fin.close();
+		fin.open("c:\\animart\\admin.dat");
+		while(fin.read((char *)&A, sizeof(A)))
+		{
+			if(A.ch_nm(usernm)==1)
+			{
+				flag = 1;
+				t++;
+				break;
+			}
+		}
+		fin.close();
+		if(flag == 1)
+		{
+			if(t<3)
+			{
+				animate();
+				cout<<"\n\n\n"<<setw(57)<<"Sorry... Username already taken..."<<"\n"<<setw(48)<<"Try another name."<<"\n";
+				cout<<setw(37)<<"You have "<<3-t<<" chance(s) left\n"<<setw(52)<<"Press any key to continue";
+				getch();
+				goto s1;
+			}
+			for(int i=5; i>0; i--)
+			{
+				animate();
+				cout<<setw(5)<<"Error... You will be redirected to the homepage in "<<i<<" seconds...";
+				nullify();
+				delay(1000);
+				flag = 0;
+			}
+			return 0;
+		}
+	}
+	t=0;
+	sup:
+	animate();
+	cout<<setw(48)<<"Sign up for Animart"<<endl;
+	cout<<setw(48)<<"-------------------"<<endl<<endl;
+	gotoxy(1,11);
+	cout<<"To Cancel : Press \'esc\' while entering password or while re-entering password...";
+	cout<<endl<<"BE AVISED: You'll not be able to cancel once your passwords have matched...\n";
+	cout<<"\nOnce you have successfully verified the password\nYou agree to our policies\nAnd your Balance will not be refunded when you delete your account...";
+	gotoxy(1,6);
+	cout<<"Username: "<<usernm;
+	cout<<"\nPassword: ";
+	stringinit(pass, 50);
+	if(fieldEntry(pass, 11, 7, passn, 'p', sizeof(pass)))
+	{
+		cout<<endl<<"Re-enter Password: ";
+		stringinit(verpass, 50);
+		animate();
+		load();
+		animate();
+		cout<<setw(48)<<"Sign up for Animart"<<endl;
+		cout<<setw(48)<<"-------------------"<<endl<<endl;
+		gotoxy(1,11);
+		cout<<"To Cancel : Press \'esc\' while entering password or while re-entering password...";
+		cout<<endl<<"BE AVISED: You'll not be able to cancel once your passwords have matched...\n";
+		cout<<"\nOnce you have successfully verified the password\nYou agree to our policies\nAnd your Balance will not be refunded when you delete your account...";
+		gotoxy(1,6);
+		cout<<"Username: "<<usernm<<"\nPassword: ";
+		for(int i=0; i<strlen(pass); i++)
+			cout<<"*";
+		cout<<"\nRe-enter Password: ";
+		if(fieldEntry(verpass, 20, 8, passn, 'p', sizeof(verpass)))
+		{
+			animate();
+			gotoxy(33, 11);
+			cout<<"VALIDATING..!!"<<endl;
+			load();
+			animate();
+			t=0;
+			if(strcmp(verpass, pass) == 0)
+			{
+				cout<<setw(48)<<"Sign up for Animart"<<endl;
+				cout<<setw(48)<<"-------------------"<<endl<<endl;
+				gotoxy(1,6);
+				cout<<"Username: "<<usernm<<"\nPassword: ";
+				for(int i=0; i<strlen(pass); i++)
+					cout<<"*";
+				cout<<"\nRe-enter Password: ";
+				for(i=0; i<strlen(verpass); i++)
+					cout<<"*";
+				gotoxy(1, 11);
+				cout<<"Your Balance will be used as the mode of payment on this site...                                              \n";
+				cout<<"\nYou'll not be able to cancel now...                                         \n";
+				cout<<"The Balance you enter will not be refunded if you delete your account...        ";
+				gotoxy(1, 9);
+				cout<<"Balance: ";
+				cin>>balance;
+			}
+			else
+			{
+				t++;
+				if(t<3)
+				{
+					cout<<"\n\n\n"<<setw(52)<<"Passwords do not match..."<<"\n"<<setw(46)<<"Try again..."<<"\n";
+					getch();
+					goto sup;
+				}
+				else
+				{
+					for(int i=5; i>0; i--)
+					{
+						cout<<setw(5)<<"Error... You will be redirected to the homepage in "<<i<<" seconds...";
+						delay(1000);
+						nullify();
+					}
+					return 0;
+				}
+			}
+		}
+		else
+		{
+			nullify();
+			return 0;
+		}
+	}
+	else
+	{
+		nullify();
+		return 0;
+	}
+	return 1;
+}
+int tradeconf(Budge &B, User &u, char trade, long double itprice, long double count1, char itnm[])
+{
+	long double z = (itprice * count1);
+	int detect = 1, point, cursor = 4;
+	animate();
+	User usr;
+	gotoxy(1,8);
+	cout<<"NOTE: This is for security reasons";
+	gotoxy(1,3);
+	cout<<"Enter Username:";
+	gets(usrnm);
+	int flag=0, tab = 0, f=0;
+	animate();
+	load();
+	animate();
+	gotoxy(1,8);
+	cout<<"NOTE: This is for security reasons";
+	if(strcmp(u.nm(), usrnm)==0)
+	{
+		ifstream f1("c:\\animart\\users.dat");
+		ofstream f2("c:\\animart\\newusers.dat");
+		while(f1.read((char *)&usr, sizeof(usr)))
+		{
+			flag = 0;
+			if(usr.ch_nm(usrnm) == 1)
+			{
+				verif:
+				gotoxy(1,cursor-1);
+				cout<<"Enter Username:"<<usrnm<<endl;
+				cout<<"Enter Password:";
+				stringinit(pss, 50);
+				if(fieldEntry(pss, 16, cursor, passn, 'p', sizeof(pss)));
+				else
+				{
+					detect = 0;
+					break;
+				}
+				if(detect)
+				{
+					if(usr.ch_val(usrnm, pss) == -1)
+					{
+						tab++;
+						if(tab<3)
+						{
+							animate();
+							gotoxy(1, 12);
+							cout<<"NOTE: This is for security reasons.";
+							gotoxy(1, 3);
+							cout<<"\n\n"<<setw(52)<<"Passwords do not match..\n"<<setw(46)<<"Try again...\n"<<setw(37)<<"You have "<<(3-tab)<<" chances left"<<endl<<endl;
+							cursor = 9;
+							goto verif;
+						}
+						else
+							flag = 0;
+					}
+					else
+					{
+						char dec;
+						de1:
+						if(trade == 's')
+							cout<<"\nAre you sure you want to sell "<<count1<<" "<<itnm<<"(s) (y/n)? ";
+						else
+							cout<<"\nAre you sure you want to buy "<<count1<<" "<<itnm<<"(s) (y/n)? ";
+						cin>>dec;
+						if((dec=='n') || (dec=='N'))
+							flag = 2;
+						else if((dec == 'y') || (dec == 'Y'))
+							flag = 1;
+						else
+						{
+							animate();
+							cout<<"\n\n\n"<<setw(55)<<"Invalid choice!!!"<<"\n";
+							goto de1;
+						}
+					}
+					f = flag;
+				}
+			}
+			if(flag==1)
+			{
+				if(trade == 's')
+				{
+					u.balance += z;
+					usr.balance += z;
+					B.budget -= z;
+				}
+				else
+				{
+					u.balance -= z;
+					usr.balance -= z;
+					B.budget += z;
+				}
+			}
+			f2.write((char *)&usr, sizeof(usr));
+		}
+		f1.close();
+		f2.close();
+		remove("c:\\animart\\users.dat");
+		rename("c:\\animart\\newusers.dat", "c:\\animart\\users.dat");
+		load();
+		if(detect)
+		{
+			if(f==0)
+			{
+				for(int j=5; j>0; j--)
+				{
+					animate();
+					cout<<setw(49)<<"Invalid Password..."<<endl;
+					redirect(j);
+				}
+				point = 0;
+			}
+			else if(f==1)
+			{
+				for(int j=5; j>0; j--)
+				{
+					animate();
+					gotoxy(1, 20);
+					cout<<setw(49)<<"Congratulations!!!"<<endl;
+					if(trade == 's')
+						cout<<setw(36)<<"Sold "<<count1<<" "<<itnm<<"(s)!!!"<<endl;
+					else
+						cout<<setw(38)<<"Bought "<<count1<<" "<<itnm<<"(s)!!!"<<endl;
+					redirect(j);
+				}
+				point = 1;
+			}
+			else
+			{
+				for(int j=5; j>0; j--)
+				{
+					animate();
+					if(trade == 's')
+						cout<<setw(48)<<"Item not sold..."<<endl;
+					else
+						cout<<setw(49)<<"Item not bought..."<<endl;
+					redirect(j);
+				}
+				point = -1;
+			}
+		}
+	}
+	else
+	{
+		for(int j=5; j>0; j--)
+		{
+			animate();
+			cout<<setw(49)<<"Invalid Username..."<<endl<<endl;
+			cout<<setw(47)<<"Logging Out and"<<endl;
+			redirect(j);
+		}
+		point = 0;
+	}
+	return point;
+}
+
+class Item
+{
+	char itfile[60];
+	char itdesc[8][30];
+	public:
+	char itnm[50];
+	char itcat[4][5];
+	long double count, mrp, itprice;
+	int itsell(Budge &, User &, char [], char [], char [], char[], int);
+	int filech(char []);
+	int itbuy(Budge &, User &, char [], char [], char [], char[], int);
+	void itshow();
+};
+
+int Item :: filech(char fi[])
+{
+	if(strcmpi(fi, itfile) == 0)
+		return 1;
+	return 0;
+}
+
+int Item :: itbuy(Budge &B, User &u, char w[], char x[], char y[], char z[], int nof)
+{
+	char che[50], datf[50], newdatf[50];
+	int j;
+	long double count1;
+	j = nof - 1;
+	strcpy(che, "c:\\animart");
+	strcpy(datf, "c:\\animart");
+	strcpy(newdatf, "c:\\animart");
+	strcpy(itcat[0], w);
+	strcpy(itcat[1], x);
+	strcpy(itcat[2], y);
+	strcpy(itcat[3], z);
+	for(int i=0; i<nof; i++)
+	{
+		strcat(che,"\\");
+		strcat(che, itcat[i]);
+		if(i==j)
+		{
+			strcat(datf, ".dat");
+			strcat(newdatf, ".dat");
+		}
+		else if(i==j-1)
+		{
+			strcat(newdatf, "\\");
+			strcat(newdatf, "new");
+			strcat(newdatf, itcat[i]);
+			strcat(datf, "\\");
+			strcat(datf, itcat[i]);
+		}
+		else
+		{
+			strcat(newdatf, "\\");
+			strcat(newdatf, itcat[i]);
+			strcat(datf, "\\");
+			strcat(datf, itcat[i]);
+		}
+	}
+	strcat(che, ".txt");
+	ifstream f1(datf);
+	Item I;
+	k=1;
+	int pointer = 0, cursor = 3;
+	while(f1.read((char *)&I, sizeof(I)))
+	{
+		if(I.filech(che)==1)
+		{
+			animate();
+			buy:
+			k=0;
+			ifstream f2(che);
+			char c;
+			while(f2)
+			{
+				f2.get(c);
+				cout<<c;
+				if(I.count>0)
+				{
+					if(k==1)
+					{
+						gotoxy(73, cursor);
+						cout<<"In Stock";
+						gotoxy(73, cursor+1);
+						cout<<"--------";
+						gotoxy(1, cursor+2);
+					}
+					pointer = 1;
+				}
+				else if(I.count<=0)
+				{
+					if(k==1)
+					{
+						gotoxy(66, cursor);
+						cout<<"Out of Stock!!!\n";
+						gotoxy(66, cursor+1);
+						cout<<"--------------";
+						gotoxy(1, cursor+2);
+					}
+					pointer = -1;
+				}
+				if(c == '\n')
+					k++;
+			}
+			f2.close();
+			char ch;
+			cout<<"\n\nIs this what you were looking for (y/n)? ";
+			cin>>ch;
+			if((pointer == 1) && (ch == 'y')||(ch == 'Y'))
+			{
+				animate();
+				long double count1;
+				piece:
+				cout<<"Enter Quantity you want to buy: ";
+				cin>>count1;
+				pieces:
+				animate();
+				if(count1<=I.count)
+				{
+					if(u.balance < count1*I.itprice)
+					{
+						animate();
+						load();
+						animate();
+						cout<<"Sorry... You don't have enough balance...\nTry entering a lower quantity\nEnter \'0\' to stop buying\n\n";
+						goto piece;
+					}
+					else
+					{
+						int z = tradeconf(B, u, 'b', I.itprice, count1, I.itnm);
+						if(z==1)
+						{
+							ifstream f1(datf);
+							fo.open(newdatf);
+							while(f1.read((char *)&I, sizeof(I)))
+							{
+								if(strcmpi(I.itcat[j], itcat[j]) == 0)
+								{
+									I.count -= count1;
+								}
+								fo.write((char *)&I, sizeof(I));
+							}
+							f1.close();
+							fo.close();
+							remove(datf);
+							rename(newdatf, datf);
+							pointer = 1;
+						}
+						else if(z==0)
+							pointer = 0;
+						else
+							pointer = -1;
+					}
+				}
+				else
+				{
+					char ch1;
+					piece2:
+					cout<<"\n\n\nSorry... We have only "<<I.count<<" pieces of "<<I.itnm<<" in our stock...\n";
+					cout<<"Do you want to buy "<<I.count<<" pieces instead (y/n) ? ";
+					cin>>ch1;
+					if((ch1=='y')||(ch1=='Y'))
+					{
+						count1 = I.count;
+						goto pieces;
+					}
+					else if((ch1=='n') || (ch1=='N'))
+						pointer = -1;
+					else
+					{
+						animate();
+						cout<<setw(48)<<"Invalid Choice!!!"<<u.nm();
+						gotoxy(1, 4);
+						goto piece2;
+					}
+				}
+			}
+			else if((pointer == -1) && ((ch == 'y') || (ch == 'Y')))
+			{
+				cout<<"Sorry... We're out of stock...\n";
+				cout<<"Please try again later...";
+				cout<<"\n\nPress any key to continue...";
+				getch();
+			}
+			else if((ch == 'n')||(ch == 'N'))
+				pointer = -1;
+			else
+			{
+				animate();
+				cout<<"Invalid choice!!!\n";
+				cursor = 4;
+				goto buy;
+			}
+		}
+	}
+	f1.close();
+	return pointer;
+}
+
+int Item :: itsell(Budge &B, User &u, char w[], char x[], char y[], char z[], int nof)
+{
+	char che[50], newche[50];
+	int j, p = 0, point = 1;
+	long double count1;
+	Item I3;
+	j = nof - 1;
+	strcpy(itcat[0], w);
+	strcpy(itcat[1], x);
+	strcpy(itcat[2], y);
+	strcpy(itcat[3], z);
+	strcpy(itfile, "c:\\animart");
+	strcpy(che, "c:\\animart");
+	strcpy(newche, "c:\\animart");
+	animate();
+	if(strcmpi(itcat[j], "")==0)
+	{
+		cout<<"Enter Item Name or Model with company name:\n";
+		gets(itnm);
+		for(int i=0; i<j; i++)
+		{
+			strcat(che, "\\");
+			strcat(newche, "\\");
+			strcat(che, itcat[i]);
+			if(i==j-1)
+				strcat(newche, "new");
+			strcat(newche, itcat[i]);
+		}
+		strcat(che, ".dat");
+		strcat(newche, ".dat");
+		fin.open(che);
+		fo.open(newche);
+		point = 0;
+		while(fin.read((char *)&I3, sizeof(I3)))
+		{
+			if(strcmpi(I3.itnm, itnm) == 0)
+			{
+				point = 1;
+				count = I3.count;
+				strcpy(itnm, I3.itnm);
+				for(i=0; i<nof; i++)
+					strcpy(itcat[i], I3.itcat[i]);
+				itprice = I3.itprice;
+				strcpy(itfile, I3.itfile);
+			}
+			fo.write((char *)&I3, sizeof(I3));
+		}
+		fin.close();
+		fo.close();
+		remove(che);
+		rename(newche, che);
+		if(point == 0)
+		{
+			cout<<"\nEnter Price:\n";
+			cin>>itprice;
+			noit:
+			cout<<"\nEnter Quantity to sell:\n";
+			cin>>count1;
+			if(B.budget < count1*itprice)
+			{
+				load();
+				animate();
+				cout<<"Enter Item Name or Model with company name:\n"<<itnm;
+				cout<<"\n\nEnter Price:\n"<<itprice;
+				cout<<"\n\nSorry... We don't have enough budget...\nTry reducing the quantity to sell...\nIf problem persists, enter quantity to sell as \'0\' and come back later...\n";
+				goto noit;
+			}
+			if(count1!=0)
+			{
+				cout<<"\nGive atmost 8 features... (Enter \'-\' if no more features)\n";
+				for(int i=0; i<8; i++)
+				{
+					cout<<i+1<<": ";
+					gets(itdesc[i]);
+					if(strcmp(itdesc[i], "-") == 0)
+					{
+						for(int o = i; o<8; o++)
+							strcpy(itdesc[o], "-");
+						break;
+					}
+				}
+				int z = tradeconf(B, u, 's', itprice, count1, itnm);
+				if(z==1)
+				{
+					int l = strlen(itnm), c=0;
+					for(int i=0; i<l; i++)
+					{
+						if((i==0) || (itnm[i+1] == '\0') || (itnm[i-1] == ' ') || (itnm[i+1]=='-'))
+						{
+						if(c<4)
+								itcat[j][c] = itnm[i];
+							c++;
+						}
+					}
+					if(c<4)
+					{
+						for(int i=1; i<=l; i++)
+						{
+						if((i==1) || (itnm[i+1] == ' ') || (itnm[i+1]=='-'))
+							{
+								if(c<4)
+									itcat[j][c] = itnm[i];
+								c++;
+							}
+						}
+						randomize();
+						int a[26], marq=0;
+						for(i=65; i<88; i++)
+						{
+							a[marq] = i;
+							marq++;
+						}
+						if(c<4)
+						{
+							for(i=0; i<2; i++)
+							{
+								marq = random(26);
+								itcat[j][c] = a[marq];
+							c++;
+							}
+						}
+					}
+					p = 1;
+					count = count1;
+					for(i=0; i<nof; i++)
+					{
+						strcat(itfile, "\\");
+						strcat(itfile, itcat[i]);
+					}
+					strcat(itfile, ".txt");
+					fo.open(itfile);
+					fo<<itnm<<"\n\n";
+					for(i=0; i<8; i++)
+					{
+						if(strcmp(itdesc[i], "-"))
+						fo<<itdesc[i]<<"\n";
+					}
+					mrp = itprice + 10*itprice/100;
+					itprice = itprice + 5*itprice/100;
+					fo<<"\nMRP: Rs."<<mrp<<"\nSpecial Price: Rs."<<itprice;
+					fo.close();
+				}
+				else if(z==0)
+					p = 0;
+				else
+					p = -1;
+			}
+			else
+			{
+				strcpy(itnm, "");
+				itprice = 0;
+				mrp=0;
+				for(int i=0; i<8; i++)
+					strcpy(itdesc[i], "");
+				for(i=0; i<4; i++)
+					strcpy(itcat[i], "");
+				p = -1;
+			}
+		}
+	}
+	if(point == 1)
+	{
+		animate();
+		for(int i=0; i<3; i++)
+		{
+			strcat(itfile, "\\");
+			strcat(itfile, itcat[i]);
+		}
+		strcat(itfile, ".txt");
+		sell:
+		char ch;
+		ifstream f4(itfile);
+		while(f4)
+		{
+			f4.get(ch);
+			cout<<ch;
+		}
+		f4.close();
+		cout<<"\nIs this what you were looking for (y/n)? ";
+		cin>>ch;
+		if((ch=='y')||(ch=='Y'))
+		{
+			animate();
+			noit1:
+			cout<<"\nEnter quantity to sell:\n";
+			cin>>count1;
+			if(B.budget<count1*itprice)
+			{
+				animate();
+				cout<<"\n\nSorry... We don't have enough budget...\nTry reducing the quantity to sell...\nIf problem persists, enter quantity to sell as \'0\' and come back later...\n";
+				cout<<"\n\nPress any key to continue...";
+				goto noit1;
+			}
+			if(count1!=0)
+			{
+				int z = tradeconf(B, u, 's', itprice, count1, itnm);
+				if(z == 1)
+				{
+					fin.open(che);
+					fo.open(newche);
+					while(fin.read((char *)&I3, sizeof(I3)))
+					{
+						if(strcmpi(I3.itcat[j], itcat[j]) == 0)
+						{
+							I3.count += count1;
+						}
+						fo.write((char *)&I3, sizeof(I3));
+					}
+					fin.close();
+					fo.close();
+					remove(che);
+					rename(newche, che);
+					p = 1;
+				}
+				else if(z==0)
+					p = 0;
+				else
+					p = -1;
+			}
+			else
+				p = -1;
+		}
+		else if((ch=='n')||(ch=='N'))
+			p=-1;
+		else
+		{
+			animate();
+			cout<<"Invalid Choice!!!\n";
+			goto sell;
+		}
+	}
+	return p;
+}
+void animate()
+{
+	clrscr();
+	for(int i=0; i<=73; i++)
+	{
+		if(i==37)
+			cout<<"ANIMART";
+		else
+			cout<<"*";
+	}
+	cout<<endl;
+}
+
+void header(char f1[], char f2[], User u, int i, char t)
+{
+	if(strcmpi(f1, "ele") == 0)
+	{
+			cout<<setw(50)<<"ANIMART - ELECTRONICS"<<endl;
+			cout<<setw(50)<<"---------------------";
+			cout<<endl<<endl;
+			if(strcmpi(f2, "cell") == 0)
+			{
+				cout<<endl<<"CELLPHONES & PDA's";
+				cout<<endl<<"------------------\n\n";
+			}
+			else if(strcmpi(f2, "Comp") == 0)
+			{
+				cout<<endl<<"COMPUTERS";
+				cout<<endl<<"---------\n\n";
+			}
+			else if(strcmpi(f2, "Cam") == 0)
+			{
+				cout<<endl<<"CAMERAS";
+				cout<<endl<<"-------\n\n";
+			}
+			else if(strcmpi(f2, "TV") == 0)
+			{
+				cout<<endl<<"TELEVISIONS";
+				cout<<endl<<"-----------\n\n";
+			}
+			else if(strcmpi(f2, "AC") == 0)
+			{
+				cout<<endl<<"AIR CONDITIONERS";
+				cout<<endl<<"----------------\n\n";
+			}
+	}
+	else if(strcmpi(f1, "boo") == 0)
+	{
+			cout<<setw(47)<<"ANIMART - BOOKS"<<endl;
+			cout<<setw(47)<<"---------------";
+			cout<<endl<<endl;
+			if(strcmpi(f2, "bio") == 0)
+			{
+				cout<<endl<<"BIOGRAPHIES & AUTOBIOGRAPHIES";
+				cout<<endl<<"-----------------------------\n\n";
+			}
+			else if(strcmpi(f2, "fant") == 0)
+			{
+				cout<<endl<<"FANTASY";
+				cout<<endl<<"-------\n\n";
+			}
+			else if(strcmpi(f2, "fic") == 0)
+			{
+				cout<<endl<<"FICTION";
+				cout<<endl<<"-------\n\n";
+			}
+			else if(strcmpi(f2, "hum") == 0)
+			{
+				cout<<endl<<"HUMOUR";
+				cout<<endl<<"------\n\n";
+			}
+			else if(strcmpi(f2, "myst") == 0)
+			{
+				cout<<endl<<"MYSTERY";
+				cout<<endl<<"-------\n\n";
+			}
+			else if(strcmpi(f2, "rom") == 0)
+			{
+				cout<<endl<<"ROMANCE";
+				cout<<endl<<"-------\n\n";
+			}
+			else if(strcmpi(f2, "scifi") == 0)
+			{
+				cout<<endl<<"SCIENCE FICTION";
+				cout<<endl<<"---------------\n\n";
+			}
+	}
+	else if(strcmpi(f1, "@hom") == 0)
+	{
+			cout<<setw(47)<<"ANIMART - @HOME"<<endl;
+			cout<<setw(47)<<"---------------";
+			cout<<endl<<endl;
+			if(strcmpi(f2, "MW") == 0)
+			{
+				cout<<endl<<"MICROWAVES";
+				cout<<endl<<"----------\n\n";
+			}
+			else if(strcmpi(f2, "REF") == 0)
+			{
+				cout<<endl<<"REFRIGERATORS";
+				cout<<endl<<"-------------\n\n";
+			}
+			else if(strcmpi(f2, "VC") == 0)
+			{
+				cout<<endl<<"VACUUM CLEANERS";
+				cout<<endl<<"---------------\n\n";
+			}
+			else if(strcmpi(f2, "WM") == 0)
+			{
+				cout<<endl<<"WASHING MACHINES";
+				cout<<endl<<"----------------\n\n";
+			}
+			else if(strcmpi(f2, "WP") == 0)
+			{
+				cout<<endl<<"WATER PURIFIERS";
+				cout<<endl<<"---------------\n\n";
+			}
+	}
+	else if(strcmpi(f1, "emnt") == 0)
+	{
+			cout<<setw(51)<<"ANIMART - ENTERTAINMENT"<<endl;
+			cout<<setw(51)<<"-----------------------";
+			cout<<endl<<endl;
+			if(strcmpi(f2, "GAM") == 0)
+			{
+				cout<<endl<<"GAMES";
+				cout<<endl<<"-----\n\n";
+			}
+			else if(strcmpi(f2, "MOV") == 0)
+			{
+				cout<<endl<<"MOVIES";
+				cout<<endl<<"------\n\n";
+			}
+			else if(strcmpi(f2, "MP") == 0)
+			{
+				cout<<endl<<"MUSIC PLAYERS";
+				cout<<endl<<"-------------\n\n";
+			}
+	}
+	gotoxy(60, i-1);
+	if(t != 'i')
+	{
+		cout<<"User: "<<u.nm();
+		gotoxy(60, i);
+		cout<<"Balance: "<<u.balance;
+	}
+	else
+	{
+		cout<<"Logged In As Admin";
+		gotoxy(60, i);
+		cout<<"Budget: "<<u.balance;
+	}
+	gotoxy(1, i+6);
+}
+int list(char f1[], char f2[], User &u, Budge &B, char t)
+{
+	Item I1, I2[30];
+	int l = 10, y = 3;
+	cursor = 4;
+	animate();
+	c:
+	header(f1, f2, u, cursor, t);
+	char fipath[50], f3[5];
+	int pointer = 0;
+	strcpy(fipath, "c:\\animart\\");
+	strcat(fipath, f1);
+	strcat(fipath, "\\");
+	strcat(fipath, f2);
+	strcat(fipath, ".dat");
+	fin.open(fipath);
+	int ind = 0;
+	while(fin.read((char *)&I1, sizeof(I1)))
+	{
+		I2[ind] = I1;
+		cout<<ind+1<<"."<<I2[ind].itnm<<endl;
+		ind++;
+	}
+	fin.close();
+	if(t=='s')
+	{
+		k = ind+2;
+		cout<<k-1<<".Other";
+	}
+	else
+	{
+		k = ind+1;
+	}
+	gotoxy(69, l);
+	cout<<k<<") Back";
+	gotoxy(1, k+10);
+	cout<<"Enter your choice: ";
+	cin>>choice3;
+	animate();
+	if(choice3 <= k)
+	{
+		if(choice3 == k)
+			return 2;
+		if((t == 's') && (choice3 == k-1))
+			strcpy(f3, "");
+		else if(choice3 <= k-1)
+			strcpy(f3, I2[choice3 - 1].itcat[2]);
+	}
+	else
+	{
+		animate();
+		cout<<"Invalid Choice..."<<endl;
+		l = 11;
+		cursor = 5;
+		goto c;
+	}
+	if(t == 's')
+		pointer = I1.itsell(B, u, f1, f2, f3, "", 3);
+	else if(t == 'b')
+		pointer = I1.itbuy(B, u, f1, f2, f3, "", 3);
+	else
+	{
+		animate();
+		strcpy(fipath, "c:\\animart\\");
+		strcat(fipath, f1);
+		strcat(fipath, "\\");
+		strcat(fipath, f2);
+		strcat(fipath, "\\");
+		strcat(fipath, f3);
+		strcat(fipath, ".txt");
+		fin.open(fipath);
+		char ch;
+		int p = 0;
+		while(fin)
+		{
+			fin.get(ch);
+			cout<<ch;
+			if(p==1)
+			{
+				gotoxy(65, y+1);
+				cout<<"In Stock: "<<I2[choice3-1].count;
+				gotoxy(65, y+2);
+				cout<<"--------";
+				gotoxy(1, y+3);
+			}
+			if(ch == '\n')
+				p++;
+		}
+		fin.close();
+		cout<<"\n\nPress any key to go back...";
+		getch();
+		animate();
+		goto c;
+	}
+	if((pointer == 1) && (t == 's'))
+	{
+		char che[50];
+		if(strcmpi(f3, "") == 0)
+		{
+			strcpy(che, "c:\\animart\\");
+			strcat(che, f1);
+			strcat(che, "\\");
+			strcat(che, f2);
+			strcat(che, ".dat");
+			fo.open(che, ios::app);
+			fo.write((char *)&I1, sizeof(I1));
+			fo.close();
+		}
+	}
+	else if(pointer == -1)
+	{
+		animate();
+		goto c;
+	}
+	return pointer;
+}
+void money (User &u, char t, int cursor)
+{
+	gotoxy(60, cursor-1);
+	if(t == 'i')
+	{
+		cout<<"Logged In As Admin";
+		gotoxy(60, cursor);
+		cout<<"Budget: "<<u.balance;
+		cout<<"\n\nWhat Would You Like To Check: ";
+		cout<<"\n-----------------------------";
+	}
+	else
+	{
+		cout<<"User: "<<u.nm();
+		gotoxy(60, cursor);
+		cout<<"Balance: "<<u.balance;
+		if(t == 's')
+		{
+			cout<<"\n\nWhat Would You Like To Sell: ";
+			cout<<"\n----------------------------";
+		}
+		else
+		{
+			cout<<"\n\nWhat Would You Like To Buy: ";
+			cout<<"\n---------------------------";
+		}
+	}
+}
+int stock(User &u, Budge &B, char t)
+{
+	int pointer = 0;
+	int line = 6, l = 3;
+	Item I, I1, I2[50];
+	animate();
+	trade:
+	cout<<setw(50)<<"Welcome To Animart"<<endl;
+	cout<<setw(50)<<"------------------";
+	if(t == 'i')
+	{
+		cout<<setw(17)<<"Budget: "<<u.balance;
+		gotoxy(60, l);
+		cout<<"Logged In As Admin";
+		gotoxy(1, line);
+	}
+	else
+	{
+		cout<<setw(18)<<"Balance: "<<u.balance;
+		gotoxy(60, l);
+		cout<<"User: "<<u.nm();
+		gotoxy(60, line);
+	}
+	cout<<endl<<"What Would You Like To Do : ";
+	cout<<endl<<"---------------------------";
+	if(t != 'i')
+	{
+		cout<<endl<<"1. Buy"<<setw(24)<<"2. Sell"<<setw(24)<<"3. Back";
+		cout<<endl<<"------"<<setw(24)<<"-------"<<setw(24)<<"-------";
+	}
+	if(t == 'i')
+	{
+		cout<<endl<<"1. Categories"<<setw(29)<<"2. Back";
+		cout<<endl<<"-------------"<<setw(29)<<"-------";
+	}
+	if(t == 's')
+	{
+		cout<<setw(38)<<endl<<"a. Electronics ";
+		cout<<setw(32)<<endl<<"b. Books ";
+		cout<<setw(42)<<endl<<"c. Home Appliances ";
+		cout<<setw(40)<<endl<<"d. Entertainment ";
+	}
+	if((t == 'b') || (t == 'i'))
+	{
+		cout<<endl<<"a. Electronics ";
+		cout<<endl<<"b. Books ";
+		cout<<endl<<"c. Home Appliances ";
+		cout<<endl<<"d. Entertainment ";
+	}
+	gotoxy(29,line+1);
+	cin>>choice;
+	if((t != 'i') && (choice == '1'))
+		return stock(u, B, 'b');
+	else if((t != 'i') && (choice == '2'))
+		return stock(u, B, 's');
+	else if(((t == 'i') && (choice == '2')) || ((t != 'i')&& (choice == '3')))
+		return 1;
+	else if((t == 'i') && (choice == '1'))
+		return stock(u, B, 'i');
+	else if(choice == 'a')
+	{
+		strcpy(fit[0], "ele");
+		l = 4;
+		animate();
+		c1a:
+		cout<<setw(50)<<"ANIMART - ELECTRONICS"<<endl;
+		cout<<setw(50)<<"---------------------";
+		money(u, t, l);
+		cout<<endl<<endl<<"1. Cellphones & PDA's"<<setw(56)<<"6. Back";
+		cout<<endl<<"2. Computers ";
+		cout<<endl<<"3. Tv, Audio & Video ";
+		cout<<endl<<"4. Cameras ";
+		cout<<endl<<"5. Air Conditioners";
+		gotoxy(31,line);
+		cin>>choice2;
+		if(choice2 == 1)
+		{
+			strcpy(fit[1], "cell");
+			pointer = list(fit[0], fit[1], u, B, t);
+			if(pointer == 2)
+				goto c1a;
+		}
+		else if(choice2 == 2)
+		{
+			strcpy(fit[1], "Comp");
+			pointer = list(fit[0], fit[1], u, B, t);
+			if(pointer == 2)
+				goto c1a;
+		}
+		else if(choice2 == 3)
+		{
+			strcpy(fit[1], "TV");
+			pointer = list(fit[0], fit[1], u, B, t);
+			if(pointer == 2)
+				goto c1a;
+		}
+		else if(choice2 == 4)
+		{
+			strcpy(fit[1], "Cam");
+			pointer = list(fit[0], fit[1], u, B, t);
+			if(pointer == 2)
+				goto c1a;
+		}
+		else if(choice2 == 5)
+		{
+			strcpy(fit[1], "AC");
+			pointer = list(fit[0], fit[1], u, B, t);
+			if(pointer == 2)
+				goto c1a;
+		}
+		else if(choice2 == 6)
+		{
+			animate();
+			line = 6;
+			l = 3;
+			goto trade;
+		}
+		else
+		{
+			animate();
+			cout<<"Invalid choice...\n";
+			l = 5;
+			line = 7;
+			goto c1a;
+		}
+	}
+	else if(choice == 'b')
+	{
+		strcpy(fit[0], "boo");
+		animate();
+		c1b:
+		cout<<setw(47)<<"ANIMART - BOOKS"<<endl;
+		cout<<setw(47)<<"---------------";
+		cout<<endl<<endl;
+		cout<<"What Would You Like To Sell : ";
+		cout<<endl<<"1. Fiction"<<setw(67)<<"8. Back";
+		cout<<endl<<"2. Romance ";
+		cout<<endl<<"3. Science Fiction ";
+		cout<<endl<<"4. Biographies and Autobiographies ";
+		cout<<endl<<"5. Fantasy ";
+		cout<<endl<<"6. Humour ";
+		cout<<endl<<"7. Mystery ";
+		gotoxy(30, line);
+		cin>>choice2;
+		if(choice2 == 1)
+		{
+			strcpy(fit[1], "fic");
+			pointer = list(fit[0], fit[1], u, B, t);
+			if(pointer == 2)
+				goto c1b;
+		}
+		else if(choice2 == 2)
+		{
+			strcpy(fit[1], "rom");
+			pointer = list(fit[0], fit[1], u, B, t);
+			if(pointer == 2)
+				goto c1b;
+		}
+		else if(choice2 == 3)
+		{
+			strcpy(fit[1], "scifi");
+			pointer = list(fit[0], fit[1], u, B, t);
+			if(pointer == 2)
+				goto c1b;
+		}
+		else if(choice2 == 4)
+		{
+			strcpy(fit[1], "bio");
+			pointer = list(fit[0], fit[1], u, B, t);
+			if(pointer == 2)
+				goto c1b;
+		}
+		else if(choice2 == 5)
+		{
+			strcpy(fit[1], "fant");
+			pointer = list(fit[0], fit[1], u, B, t);
+			if(pointer == 2)
+				goto c1b;
+		}
+		else if(choice2 == 6)
+		{
+			strcpy(fit[1], "hum");
+			pointer = list(fit[0], fit[1], u, B, t);
+			if(pointer == 2)
+				goto c1b;
+		}
+		else if(choice2 == 7)
+		{
+			strcpy(fit[1], "myst");
+			pointer = list(fit[0], fit[1], u, B, t);
+			if(pointer == 2)
+				goto c1b;
+		}
+		else if(choice2 == 8)
+		{
+			animate();
+			l = 3;
+			line = 6;
+			goto trade;
+		}
+		else
+		{
+			animate();
+			cout<<"Invalid choice...\n";
+			line = 7;
+			goto c1b;
+		}
+	}
+	else if(choice == 'c')
+	{
+		strcpy(fit[0], "@hom");
+		animate();
+		c1c:
+		cout<<setw(47)<<"ANIMART - @HOME"<<endl;
+		cout<<setw(47)<<"---------------";
+		cout<<endl<<endl;
+		cout<<"What Would You Like To Sell : ";
+		cout<<endl<<"1. Microwave"<<setw(65)<<"6. Back";
+		cout<<endl<<"2. Refrigerator";
+		cout<<endl<<"3. Vacuum Cleaner";
+		cout<<endl<<"4. Washing Machine";
+		cout<<endl<<"5. Water Purifier";
+		gotoxy(30, line);
+		cin>>choice2;
+		if(choice2 == 1)
+		{
+			strcpy(fit[1], "MW");
+			pointer = list(fit[0], fit[1], u, B, t);
+			if(pointer == 2)
+				goto c1c;
+		}
+		else if(choice2 == 2)
+		{
+			strcpy(fit[1], "REF");
+			pointer = list(fit[0], fit[1], u, B, t);
+			if(pointer == 2)
+				goto c1c;
+		}
+		else if(choice2 == 3)
+		{
+			strcpy(fit[1], "VC");
+			pointer = list(fit[0], fit[1], u, B, t);
+			if(pointer == 2)
+				goto c1c;
+		}
+		else if(choice2 == 4)
+		{
+			strcpy(fit[1], "WM");
+			pointer = list(fit[0], fit[1], u, B, t);
+			if(pointer == 2)
+				goto c1c;
+		}
+		else if(choice2 == 5)
+		{
+			strcpy(fit[1], "WP");
+			pointer = list(fit[0], fit[1], u, B, t);
+			if(pointer == 2)
+				goto c1c;
+		}
+		else if(choice2 == 6)
+		{
+			animate();
+			l = 3;
+			line = 6;
+			goto trade;
+		}
+		else
+		{
+			animate();
+			cout<<"Invalid choice...\n";
+			l = 5;
+			line = 7;
+			goto c1c;
+		}
+	}
+	else if(choice == 'd')
+	{
+		strcpy(fit[0], "emnt");
+		animate();
+		c1d:
+		cout<<setw(51)<<"ANIMART - ENTERTAINMENT"<<endl;
+		cout<<setw(51)<<"-----------------------";
+		cout<<endl<<endl;
+		cout<<"What Would You Like To Sell : ";
+		cout<<endl<<"1. Games"<<setw(67)<<"4. Back";
+		cout<<endl<<"2. Movies";
+		cout<<endl<<"3. Music Players";
+		gotoxy(30, line);
+		cin>>choice2;
+		if(choice2 == 1)
+		{
+			strcpy(fit[1], "GAM");
+			pointer = list(fit[0], fit[1], u, B, t);
+			if(pointer == 2)
+				goto c1d;
+		}
+		else if(choice2 == 2)
+		{
+			strcpy(fit[1], "MOV");
+			pointer = list(fit[0], fit[1], u, B, t);
+			if(pointer == 2)
+				goto c1d;
+		}
+		else if(choice2 == 3)
+		{
+			strcpy(fit[1], "MP");
+			pointer = list(fit[0], fit[1], u, B, t);
+			if(pointer == 2)
+				goto c1d;
+		}
+		else if(choice2 == 4)
+		{
+			animate();
+			l = 3;
+			line =  6;
+			goto trade;
+		}
+		else
+		{
+			animate();
+			cout<<"Invalid choice...\n";
+			line = 7;
+			goto c1d;
+		}
+	}
+	else
+	{
+		animate();
+		cout<<"Invalid choice...\n\n";
+		line = 7;
+		l = 4;
+		goto trade;
+	}
+	return pointer;
+}
+void homepage()
+{
+	textbackground(0);
+	textcolor(9);
+	clrscr();
+	cout<<"    __              "<<endl;
+	cout<<" / /  \\ \\  _____    ___  _______  ____       ____     __      _____    _______"<<endl;
+	cout<<"| |    | | | |\\ \\   | | |__   __| | \\ \\     / / |  / /  \\ \\  | |  \\ \\ |__   __|"<<endl;
+	cout<<"| |----| | | | \\ \\  | |    | |    | |\\ \\   / /| | | |    | | | |  / /    | |"<<endl;
+	cout<<"| |----| | | |  \\ \\ | |    | |    | | \\ \\ / / | | | |----| | | |/ /      | |"<<endl;
+	cout<<"| |    | | | |   \\ \\| |    | |    | |  -----  | | | |----| | | |\\ \\      | |"<<endl;
+	cout<<"| |    | | | |    \\ | |  __| |__  | |   ---   | | | |    | | | | \\ \\     | |"<<endl;
+	cout<<"|_|    |_| |_|     \\__| |_______| |_|         |_| |_|    |_| |_|  \\_\\    |_|"<<endl<<endl;
+	gotoxy(72, 9);
+	cout<<"Anithing.";
+	delay(1000);
+	gotoxy(63, 9);
+	cout<<"Anithing. Anitime.";
+	delay(1000);
+	for(int i=0; i<53; i++)
+	{
+		gotoxy(53-i, 9);
+		cout<<"Anithing. Anitime. Aniwhere.";
+		if(i==0)
+			delay(900);
+		if(i!=0)
+			cout<<" ";
+		gotoxy(80-i, 9);
+		delay(100);
+	}
+	delay(500);
+	load();
+}
+int ext(Budge &B)
+{
+	animate();
+	int p = 0;
+	char c;
+	ex:
+	gotoxy(1, 11);
+	cout<<setw(58)<<"Are you sure you want to exit (y/n)? ";
+	cin>>c;
+	if((c=='y') || (c=='Y'))
+	{
+		animate();
+		gotoxy(35,8);
+		fo.open("c:\\animart\\budget.dat");
+		fo.write((char *)&B, sizeof(B));
+		fo.close();
+		cout<<"EXITING..!!";
+		load();
+		p = 1;
+	}
+	else if((c=='n') || (c=='N'))
+	{
+		p = 0;
+	}
+	else
+	{
+		animate();
+		cout<<"\n\n\n"<<setw(55)<<"Invalid choice!!!"<<"\n"<<setw(46)<<"Try again!!!"<<"\n";
+		goto ex;
+	}
+	return p;
+}
+void redirect(int x)
+{
+		cout<<setw(47)<<"Redirecting to homepage in "<<x<<" seconds...";
+		delay(1000);
+}
+
+void Anima(Budge &B, User &u, char s = 'u')
+{
+	int i=0, c=0;
+	animate();
+	start:
+	if(s=='u')
+	{
+		cout<<setw(6);
+		for(i=1; i<=70; i++)
+		{
+			cout<<"*";
+		}
+		for(i=1; i<=11; i++)
+		{
+			cout<<endl;
+			if(i==2)
+			{
+				cout<<setw(6)<<"*"<<setw(36)<<"User: "<<u.nm();
+				gotoxy(75, wherey());
+				cout<<"*";
+			}
+			else if(i==4)
+				cout<<setw(6)<<"*"<<setw(35)<<"1.BUY"<<setw(34)<<"*";
+			else if(i==5)
+				cout<<setw(6)<<"*"<<setw(36)<<"2.SELL"<<setw(33)<<"*";
+			else if(i==6)
+				cout<<setw(6)<<"*"<<setw(39)<<"3.BALANCE"<<setw(30)<<"*";
+			else if(i==7)
+				cout<<setw(6)<<"*"<<setw(38)<<"4.LOGOUT"<<setw(31)<<"*";
+			else if(i==8)
+				cout<<setw(6)<<"*"<<setw(36)<<"5.EXIT"<<setw(33)<<"*";
+			else if(i==9)
+				cout<<setw(6)<<"*"<<setw(43)<<"6.DELETE ACC."<<setw(26)<<"*";
+			else
+				cout<<setw(6)<<"*"<<setw(69)<<"*";
+		}
+		cout<<endl<<setw(6);
+		for(i=1; i<=70; i++)
+		{
+			cout<<"*";
+		}
+		cout<<endl<<endl<<setw(50)<<"Enter your choice: ";
+		cin>>c;
+		switch(c)
+		{
+			case 1: animate();
+				if(stock(u, B, 'b')==0)
+					break;
+				animate();
+				goto start;
+
+			case 2: animate();
+				if(stock(u, B, 's')==0)
+					break;
+				animate();
+				goto start;
+
+			case 3: animate();
+				ifstream f1("c:\\animart\\users.dat");
+				while(f1.read((char*)&usr, sizeof(usr)))
+				{
+					gotoxy(1, 21);
+					if(usr.ch_nm(u.nm()))
+						cout<<setw(45)<<"Balance: Rs. "<<u.balance<<"\n\n";
+				}
+				f1.close();
+				cout<<setw(55)<<"Press any key to continue...";
+				getch();
+				animate();
+				goto start;
+
+			case 4: animate();
+				gotoxy(1, 11);
+				char c;
+				lout:
+				cout<<setw(58)<<"Are you sure you want to logout (y/n)? ";
+				cin>>c;
+				fo.open("c:\\animart\\budget.dat");
+				if((c=='y') || (c=='Y'))
+				{
+					fo.write((char *)&B, sizeof(B));
+					fo.close();
+					animate();
+					look();
+				}
+				else if((c=='n') || (c=='N'))
+				{
+					goto start;
+				}
+				else
+				{
+					animate();
+					cout<<"\n\n\n"<<setw(55)<<"Invalid choice!!!"<<"\n"<<setw(46)<<"Try again!!!"<<"\n";
+					goto lout;
+				}
+
+			case 5: if(ext(B))
+				exit(0);
+				animate();
+				goto start;
+
+			case 6: if(del(members, u) == 1)
+				break;
+				animate();
+				goto start;
+
+			default:animate();
+				cout<<setw(48)<<"Invalid Choice!!!"<<endl;
+				cout<<setw(46)<<"Choose again"<<endl;
+				cout<<setw(46)<<"------------"<<endl<<endl;
+				goto start;
+		}
+	}
+	else
+	{
+		cout<<setw(6);
+		for(i=1; i<=70; i++)
+		{
+			cout<<"*";
+		}
+		for(i=1; i<=11; i++)
+		{
+			cout<<endl;
+			if(i==2)
+				cout<<setw(6)<<"*"<<setw(46)<<"Logged In As Admin"<<setw(23)<<"*";
+			else if(i==4)
+				cout<<setw(6)<<"*"<<setw(44)<<"1.USER OPTIONS"<<setw(25)<<"*";
+			else if(i==5)
+				cout<<setw(6)<<"*"<<setw(42)<<"2.VIEW STOCK"<<setw(27)<<"*";
+			else if(i==6)
+				cout<<setw(6)<<"*"<<setw(38)<<"3.BUDGET"<<setw(31)<<"*";
+			else if(i==7)
+				cout<<setw(6)<<"*"<<setw(38)<<"4.LOGOUT"<<setw(31)<<"*";
+			else if(i==8)
+				cout<<setw(6)<<"*"<<setw(36)<<"5.EXIT"<<setw(33)<<"*";
+			else
+				cout<<setw(6)<<"*"<<setw(69)<<"*";
+		}
+		cout<<endl<<setw(6);
+		for(i=1; i<=70; i++)
+		{
+			cout<<"*";
+		}
+		cout<<endl<<endl<<setw(50)<<"Enter your choice: ";
+		cin>>c;
+		fo.open("c:\\animart\\budget.dat", ios::app);
+		switch(c)
+		{
+			case 1: animate();
+				if(use()==0)
+					break;
+				animate();
+				goto start;
+
+			case 2: animate();
+				if(stock(u, B, 'i')==0)
+					break;
+				animate();
+				goto start;
+
+			case 3: animate();
+				gotoxy(1, 21);
+				cout<<setw(45)<<"Budget: Rs. "<<B.budget<<"\n\n";
+				cout<<setw(53)<<"Press any key to continue...";
+				getch();
+				animate();
+				goto start;
+
+			case 4: animate();
+				gotoxy(1, 11);
+				char c;
+				lout1:
+				cout<<setw(58)<<"Are you sure you want to logout (y/n)? ";
+				cin>>c;
+				if((c=='y') || (c=='Y'))
+				{
+					fo.write((char *)&B, sizeof(B));
+					fo.close();
+					animate();
+					look();
+				}
+				else if((c=='n') || (c=='N'))
+				{
+					goto start;
+				}
+				else
+				{
+					animate();
+					cout<<"\n\n\n"<<setw(55)<<"Invalid choice!!!"<<"\n"<<setw(46)<<"Try again!!!"<<"\n";
+					goto lout1;
+				}
+
+			case 5: if(ext(B))
+				exit(0);
+				animate();
+				goto start;
+
+			default:animate();
+				cout<<setw(51)<<"Invalid Choice!!!"<<endl;
+				cout<<setw(46)<<"Choose again"<<endl;
+				cout<<setw(46)<<"------------"<<endl<<endl;
+				goto start;
+		}
+	}
+}
+void signin(int &members, Budge &B)
+{
+	animate();
+	int t=0, i;
+	i=members;
+	cout<<endl<<endl<<endl<<endl<<setw(61)<<"Please login using your ANIMART account!!";
+	login:
+	gotoxy(1,19);
+	cout<<"To Cancel: Press \'esc\' while entering password...";
+	gotoxy(31,11);
+	cout<<"Username:";
+	gets(usrnm);
+	cout<<setw(39)<<"Password:";
+	stringinit(pss, 50);
+	if(fieldEntry(pss, 40, 12, passn, 'p', sizeof(pss)))
+	{
+		if((strcmp(usrnm, "admin")==0) && (strcmp(pss, "admin")==0))
+		{
+			u.asadm(B);
+			Anima(B, u, 'a');
+		}
+		else
+		{
+			fin.open("c:\\animart\\users.dat");
+			int marker = -1, m=0;
+			while(fin.read((char *)&u, sizeof(u)))
+			{
+				int z = u.ch_val(usrnm, pss);
+				if(z == 1)
+				{
+					usr = u;
+					marker = m;
+					break;
+				}
+				m++;
+			}
+			fin.close();
+			if(marker!=-1)
+			{
+				animate();
+				gotoxy(33, 11);
+				cout<<"WELCOME "<<usrnm;
+				delay(500);
+				Anima(B, usr);
+			}
+			else
+			{
+				animate();
+				t++;
+				if(t<3)
+				{
+					cout<<"\n\n\n\n"<<setw(55)<<"Invalid username or password!!!"<<endl<<setw(45)<<"Try again.\n"<<setw(37)<<"You have "<<(3-t)<<" chances left"<<"\n\n";
+					goto login;
+				}
+				else
+				{
+					for(int i=5; i>0; i--)
+					{
+						animate();
+						cout<<setw(5)<<"Error... You will be redirected to the homepage in "<<i<<" seconds...";
+						delay(1000);
+					}
+				}
+			}
+		}
+	}
+}
+void signup(int &members, Budge &B)
+{
+	if(us[ind].read())
+	{
+		animate();
+		gotoxy(1, 11);
+		load();
+		animate();
+		B.budget += us[ind].balance;
+		fo.open("c:\\animart\\budget.dat");
+		fo.write((char *)&B, sizeof(B));
+		fo.close();
+		cout<<endl<<setw(58)<<"You Have Successfully Joined Us..."<<endl;
+		cout<<setw(54)<<"Press any key to continue...";
+		fo.open("c:\\animart\\users.dat", ios::app);
+		fo.write((char *)&us[ind], sizeof(us[ind]));
+		fo.close();
+		ind++;
+		members++;
+		getch();
+	}
+}
+int del(int &members, User &u)
+{
+	char usrnm[30], pss[30];
+	int detect = 1, pointer;
+	User us;
+	animate();
+	cout<<"Enter Username:";
+	gets(usrnm);
+	int flag=0, tab = 0, f=0, cursor = 4;
+	fin.open("c:\\animart\\users.dat");
+	fo.open("c:\\animart\\newusers.dat");
+	if(strcmp(u.nm(), usrnm)==0)
+	{
+		while(fin.read((char *)&us, sizeof(us)))
+		{
+			flag = 0;
+			if(us.ch_nm(usrnm) == 1)
+			{
+				verif:
+				cout<<"Enter Password:";
+				stringinit(pss, 50);
+				if(fieldEntry(pss, 16, cursor, passn, 'p', sizeof(pss)));
+				else
+				{
+					detect = 0;
+					break;
+				}
+				if(detect)
+				{
+					if(us.ch_val(usrnm, pss) == -1)
+					{
+						if(tab<3)
+						{
+							tab++;
+							animate();
+							cout<<"\n\n"<<setw(52)<<"Passwords do not match..."<<"\n"<<setw(46)<<"Try again..."<<"\n"<<setw(37)<<"You have "<<(3-tab)<<" chances left"<<endl<<endl;
+							cursor = 9;
+							goto verif;
+						}
+						else
+						{
+							for(int i=5; i>0; i--)
+							{
+								animate();
+								cout<<setw(5)<<"Error... You will be redirected back in "<<i<<" seconds...";
+								delay(1000);
+								flag = 0;
+							}
+						}
+					}
+					else
+					{
+						char dec;
+						de1:
+						cout<<"\n\nIf you delete your account, your money will not be refunded...\n";
+						cout<<"\nContinue to delete this account(y/n)? ";
+						cin>>dec;
+						if((dec=='n') || (dec=='N'))
+							flag = 2;
+						else if((dec == 'y') || (dec == 'Y'))
+							flag = 1;
+						else
+						{
+							animate();
+							cout<<"\n\n\n"<<setw(55)<<"Invalid choice!!!"<<"\n";
+							goto de1;
+						}
+						f = flag;
+					}
+				}
+			}
+			if(flag!=1)
+				fo.write((char *)&us, sizeof(us));
+		}
+		fin.close();
+		fo.close();
+		remove("c:\\animart\\users.dat");
+		rename("c:\\animart\\newusers.dat", "c:\\animart\\users.dat");
+		if(detect)
+		{
+			if(f==0)
+			{
+				for(int j=5; j>0; j--)
+				{
+					animate();
+					cout<<setw(55)<<"Invalid Username or Password..."<<endl;
+					redirect(j);
+					pointer = 1;
+				}
+			}
+			else if(f==1)
+			{
+				for(int j=5; j>0; j--)
+				{
+					members--;
+					animate();
+					cout<<setw(58)<<"Account successfully deleted..."<<endl;
+					cout<<setw(62)<<"We're sorry to have dissapointed you..."<<endl;
+					redirect(j);
+					pointer = 1;
+				}
+			}
+			else
+			{
+				for(int j=5; j>0; j--)
+				{
+					animate();
+					cout<<setw(54)<<"Account not deleted..."<<endl;
+					redirect(j);
+					pointer = 0;
+				}
+			}
+		}
+	}
+	else
+	{
+		for(int j=5; j>0; j--)
+		{
+			animate();
+			cout<<setw(49)<<"Invalid Username..."<<endl<<endl;
+			cout<<setw(47)<<"Logging Out and"<<endl;
+			redirect(j);
+			pointer = 1;
+		}
+	}
+	return pointer;
+}
+void look()
+{
+	Budge B1;
+	textbackground(2);  //Green Background
+	textcolor(63);      //White Text
+	fo.open("c:\\animart\\users.dat", ios::app);
+	fo.close();
+	fin.open("c:\\animart\\users.dat");
+	while(fin.read((char *)&usr, sizeof(usr)))
+	{
+		members++;
+	}
+	fin.close();
+	fin.open("c:\\animart\\budget.dat");
+	while(fin.read((char *)&B1, sizeof(B1)))
+		B.budget = B1.budget;
+	fin.close();
+	second:
+	animate();
+	int main_ch;
+	cout<<setw(51)<<"Welcome to ANIMART..!!"<<endl<<setw(53)<<"Anithing.Anitime.Aniwhere."<<endl<<endl<<endl<<endl<<endl<<endl<<endl;
+	cout<<setw(42)<<"1.Sign In"<<endl;
+	cout<<setw(42)<<"2.Sign Up"<<endl;
+	cout<<setw(39)<<"3.Exit"<<endl<<endl<<endl<<endl<<endl<<endl<<endl<<endl;
+	cout<<setw(52)<<"Please Enter your choice:";
+	cin>>main_ch;
+	switch (main_ch)
+	{
+		case 1: signin(members, B);
+						goto second;
+
+		case 2: signup(members, B);
+						goto second;
+
+		case 3: if(ext(B))
+						exit(0);
+						goto second;
+
+		default:for(int i=3; i>0; i--)
+			{
+				animate();
+				cout<<"\n\n\n"<<setw(50)<<"Invalid choice!!!"<<"\n";
+				redirect(i);
+			}
+			goto second;
+	}
+}
+void main()
+{
+	homepage();
+	look();
+}
+int use()
+{
+	animate();
+	here:
+	int c=0, point = 1;
+	cursor = 5;
+	cout<<setw(6);
+	for(int i=1; i<=70; i++)
+	{
+		cout<<"*";
+	}
+	for(i=1; i<=11; i++)
+	{
+		cout<<endl;
+		if(i==2)
+			cout<<setw(6)<<"*"<<setw(46)<<"Logged In As Admin"<<setw(23)<<"*";
+		else if(i==5)
+			cout<<setw(6)<<"*"<<setw(42)<<"1.LIST USERS"<<setw(27)<<"*";
+		else if(i==6)
+			cout<<setw(6)<<"*"<<setw(43)<<"2.DELETE USER"<<setw(26)<<"*";
+		else if(i==7)
+			cout<<setw(6)<<"*"<<setw(36)<<"3.BACK"<<setw(33)<<"*";
+		else
+			cout<<setw(6)<<"*"<<setw(69)<<"*";
+	}
+	cout<<endl<<setw(6);
+	for(i=1; i<=70; i++)
+	{
+		cout<<"*";
+	}
+	cout<<endl<<endl<<setw(50)<<"Enter your choice: ";
+	cin>>c;
+	if(c==1)
+	{
+		animate();
+		again:
+		cout<<"User Names"<<setw(68)<<"Logged In As Admin\n";
+		cout<<"----------\n";
+		int ind = 0, choice;
+		fin.open("c:\\animart\\users.dat");
+		while(fin.read((char *)&u1, sizeof(u1)))
+		{
+			us[ind] = u1;
+			if((ind+1)%11==0)
+				gotoxy(41, 8);
+			cout<<ind+1<<"."<<us[ind].nm()<<endl;
+			ind++;
+		}
+		fin.close();
+		k = ind+1;
+		gotoxy(69, cursor);
+		cout<<k<<") Back";
+		gotoxy(1, k+10);
+		cout<<"Select appropriate number to see details : ";
+		cin>>choice;
+		animate();
+		if(choice <= k)
+		{
+			if(choice <= k-1)
+			{
+				cout<<setw(78)<<"Logged In As Admin";
+				gotoxy(1, 10);
+				us[choice - 1].disp();
+				cout<<"\nPress any key to go back...";
+				getch();
+				animate();
+				goto again;
+			}
+			else if(choice == k)
+			{
+				animate();
+				goto here;
+			}
+		}
+		else
+		{
+			animate();
+			cout<<"Invalid Choice...\n";
+			cursor = 6;
+			goto again;
+		}
+	}
+	else if(c==2)
+	{
+		animate();
+		gotoxy(30, 10);
+		User d;
+		cout<<"Enter Name of User to be deleted: ";
+		gets(usrnm);
+		ifstream in("c:\\animart\\users.dat");
+		ofstream out("c:\\animart\\newusers.dat");
+		int flag = 1, mark = 0, f = 1;
+		while(in.read((char *)&d, sizeof(d)))
+		{
+			flag = 1;
+			if(d.ch_nm(usrnm))
+			{
+				mark = 1;
+				animate();
+				cout<<"Enter your Username: ";
+				gets(usrnm);
+				if(strcmp(usrnm, "admin") == 0)
+				{
+					cout<<"Enter Password: ";
+					stringinit(pss, 50);
+					int detect = fieldEntry(pss, 17, 4, passn, 'p', sizeof(pss));
+					if((detect) && (strcmp(pss, "admin")==0))
+					{
+						animate();
+						yn:
+						char s;
+						cout<<"Are you sure you want to delete "<<d.nm()<<" (y/n)? ";
+						cin>>s;
+						if((s == 'y') || (s == 'Y'))
+						{
+							flag = 0;
+							f = 0;
+						}
+						else if((s == 'n') || (s == 'N'));
+						else
+						{
+							animate();
+							cout<<"Invalid Choice!!!";
+							goto yn;
+						}
+					}
+					else
+					{
+						for(int i=1; i<5; i++)
+						{
+							animate();
+							cout<<"Invalid password!!!";
+							redirect(i);
+						}
+						mark = -1;
+						point = 0;
+					}
+				}
+				else
+				{
+					for(int i=1; i<5; i++)
+					{
+						animate();
+						cout<<"Invalid username!!!";
+						redirect(i);
+					}
+					mark = -1;
+					point = 0;
+				}
+			}
+			if(flag)
+				out.write((char *)&d, sizeof(d));
+		}
+		in.close();
+		out.close();
+		remove("c:\\animart\\users.dat");
+		rename("c:\\animart\\newusers.dat", "c:\\animart\\users.dat");
+		if(mark !=-1)
+		{
+			animate();
+			if((mark == 1))
+			{
+				gotoxy(30, 10);
+				if(f == 0)
+					cout<<"User successfully deleted!!!\n\n";
+				else
+					cout<<"User not deleted!!!\n\n";
+			}
+			else if(mark == 0)
+			{
+				gotoxy(30, 10);
+				cout<<"No such user exists!!!\n\n";
+			}
+			cout<<setw(57)<<"Press any key to continue...";
+			getch();
+			animate();
+			goto here;
+		}
+	}
+	else if(c==3)
+		point = 1;
+	else
+	{
+		animate();
+		cout<<setw(54)<<"Invalid Choice!!!\n";
+		cout<<setw(51)<<"Enter Again!!!\n";
+		goto here;
+	}
+	return point;
+}
